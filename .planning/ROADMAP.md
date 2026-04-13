@@ -62,8 +62,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: First-person controls, collision detection
-- [ ] 03-02: Flashlight, sanity system, interactions
+- [x] 03-01-PLAN.md: First-person controls, collision detection
+- [x] 03-02-PLAN.md: Flashlight, sanity system, interactions
 
 ### Phase 4: Ghost
 **Goal**: Ghost entity with behavior state machine and 6 distinct types
@@ -75,11 +75,10 @@ Plans:
   3. All 6 ghost types (Phantom, Banshee, Revenant, Shade, Poltergeist, Wraith) have distinct behavior
   4. Players can hide from hunting ghost; ghost catches visible players
   5. Each ghost type leaves different evidence combinations (EMF, Cold, Orbs, etc.)
-**Plans**: 2 plans
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: Ghost entity, rendering, behavior state machine
-- [ ] 04-02: 6 ghost types, evidence rules, hunt mechanic
+- [x] 04-01-PLAN.md: Complete ghost system with entity, state machine, 6 types, hunt mechanics
 
 ### Phase 5: Evidence
 **Goal**: Evidence detection tools, journal system, and win/lose conditions
@@ -94,8 +93,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: Evidence tools, detection logic, journal UI
-- [ ] 05-02: Win/lose conditions, victory screens, scoring
+- [x] 05-01-PLAN.md: Evidence tools, detection logic, journal UI
+- [x] 05-02-PLAN.md: Win/lose conditions, victory screens, scoring
 
 ### Phase 6: Audio
 **Goal**: Complete procedural audio engine with spatial positioning
@@ -110,7 +109,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01: Procedural audio, spatial positioning, synthesis
+- [x] 06-01-PLAN.md: Procedural audio, spatial positioning, synthesis
 
 ### Phase 7: AI Dialogue
 **Goal**: GLM-powered ghost dialogue with contextual responses
@@ -124,7 +123,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: GLM integration, system prompt, fallback pool
+- [x] 07-01-PLAN.md — GLM integration, system prompt, fallback pool
 
 ### Phase 8: UI & Polish
 **Goal**: Complete UI overlays, scoring, and game flow
@@ -147,11 +146,11 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/2 | Not started | - |
 | 2. Environment | 0/2 | Not started | - |
-| 3. Player | 0/2 | Not started | - |
-| 4. Ghost | 0/2 | Not started | - |
-| 5. Evidence | 0/2 | Not started | - |
-| 6. Audio | 0/1 | Not started | - |
-| 7. AI Dialogue | 0/1 | Not started | - |
+| 3. Player | 2/2 | Planned | - |
+| 4. Ghost | 1/1 | Planned | - |
+| 5. Evidence | 2/2 | Planned | - |
+| 6. Audio | 1/1 | Planned | - |
+| 7. AI Dialogue | 1/1 | Planned | - |
 | 8. UI & Polish | 0/1 | Not started | - |
 
 ---
