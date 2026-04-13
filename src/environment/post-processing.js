@@ -87,15 +87,20 @@ export class PostProcessor {
    * Setup post-processing pipeline
    */
   setup() {
-    // Handle case where getSize might not be available yet
-    let size = { width: window.innerWidth, height: window.innerHeight };
-    try {
-      if (this.renderer && typeof this.renderer.getSize === 'function') {
-        size = this.renderer.getSize();
+    // Handle case where renderer might not be ready
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    
+    if (this.renderer && this.renderer.domElement && this.renderer.domElement.width) {
+      try {
+        width = this.renderer.domElement.width || width;
+        height = this.renderer.domElement.height || height;
+      } catch (e) {
+        // Use window size fallback
       }
-    } catch (e) {
-      console.warn('Renderer not ready for getSize:', e);
     }
+    
+    const size = { width, height };
     
     // Create composer
     this.composer = new EffectComposer(this.renderer);

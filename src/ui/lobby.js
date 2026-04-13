@@ -185,9 +185,17 @@ class LobbyUI {
       <p class="status">The dead don't rest here. Neither will you.</p>
     `;
     
+    // Ensure container is in DOM
+    if (this.container.parentElement !== document.getElementById('app')) {
+      const app = document.getElementById('app');
+      if (app) app.appendChild(this.container);
+    }
+    
     // Bind events
-    document.getElementById('btn-create').addEventListener('click', () => this.createRoom());
-    document.getElementById('btn-join').addEventListener('click', () => this.showJoinRoom());
+    const btnCreate = document.getElementById('btn-create');
+    const btnJoin = document.getElementById('btn-join');
+    if (btnCreate) btnCreate.addEventListener('click', () => this.createRoom());
+    if (btnJoin) btnJoin.addEventListener('click', () => this.showJoinRoom());
   }
   
   /**
