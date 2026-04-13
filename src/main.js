@@ -1,41 +1,110 @@
 import * as THREE from 'three';
-import { createScene } from './game/scene.js';
 import { createRenderer } from './game/renderer.js';
+import { MapGenerator } from './environment/map-generator.js';
+import { setupAtmosphere, createMoonlight, createCandles } from './environment/lighting.js';
+import { PostProcessor } from './environment/post-processing.js';
+import networkClient from './network/client.js';
+import lobbyUI from './ui/lobby.js';
 
 /**
  * SPECTRA - Browser-based Multiplayer Horror Investigation
  * Entry point with game loop
  */
 
-// Scene setup
-const scene = createScene();
-const canvas = document.getElementById('game-canvas');
-const renderer = createRenderer(canvas);
+// Global state
+let renderer, scene, camera, postProcessor;
+let mapGenerator;
+let candles = [];
+let clock = new THREE.Clock();
 
-// Camera setup - first person perspective
-const camera = new THREE.PerspectiveCamera(
-  75, // FOV
-  window.innerWidth / window.innerHeight, // aspect
-  0.1, // near
-  100 // far
-);
-camera.position.set(0, 1.6, 3); // Player height
+// Initialize game
+async function init() {
+  // Create renderer first
+  const canvas = document.getElementById('game-canvas');
+  renderer = createRenderer(canvas);
+
+  // Create scene
+  scene = new THREE.Scene();
+  
+  // Setup atmosphere (fog, ambient light)
+  setupAtmosphere(scene);
+  
+  // Generate procedural map
+  mapGenerator = new MapGenerator('spectra');
+  const mapData = mapGenerator.generate();
+  mapGenerator.render(scene);
+  
+  // Add moonlight through windows
+  const windowPositions = [
+    { pos: new THREE.Vector3(-0.5, 3, 5), target: new THREE.Vector3(0, 0, 5) },
+    { pos: new THREE.Vector3(-0.5, 3, 10), target: new THREE.Vector3(0, 0, 10) },
+    { pos: new THREE.Vector3(-0.5, 7, 5), target: new THREE.Vector3(0, 4, 5) }
+  ];
+  for (const wp of windowPositions) {
+    const moonlight = createMoonlight(wp.pos, wp.target);
+    scene.add(moonlight);
+  }
+  
+  // Add flickering candles
+  candles = createCandles(mapData, scene, 8);
+  
+  // Setup post-processing
+  postProcessor = new PostProcessor(renderer, scene, camera);
+  
+  // Setup camera
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+  );
+  camera.position.set(5, 5.6, 5); // Start in ground floor
+  
+  // Handle resize
+  window.addEventListener('resize', onWindowResize);
+  
+  // Initialize lobby UI
+  lobbyUI.init();
+  
+  // Start animation loop
+  animate();
+  
+  console.log('SPECTRA initialized');
+}
 
 // Handle window resize
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (postProcessor) {
+    postProcessor.resize(window.innerWidth, window.innerHeight);
+  }
 }
-window.addEventListener('resize', onWindowResize);
 
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  
+  const deltaTime = clock.getDelta();
+  
+  // Update candle flickering
+  for (const candle of candles) {
+    candle.update(deltaTime);
+  }
+  
+  // Update post-processing
+  if (postProcessor) {
+    postProcessor.update(deltaTime);
+    postProcessor.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
-// Start the game
-animate();
-
-console.log('SPECTRA initialized');
+// Start the game when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
