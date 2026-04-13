@@ -59,7 +59,21 @@ async function init() {
     0.1,
     100
   );
-  camera.position.set(5, 5.6, 5); // Start in ground floor
+  camera.position.set(-2, 1.6, 5); // Start near entrance where there's light
+  
+  // Add flashlight attachment
+  const flashlight = new THREE.SpotLight(0xffffff, 2.0); // Bright flashlight
+  flashlight.position.set(0, 0, 0);
+  flashlight.target.position.set(0, 0, -1);
+  flashlight.angle = Math.PI / 6;
+  flashlight.penumbra = 0.2;
+  flashlight.decay = 2;
+  flashlight.distance = 20;
+  flashlight.castShadow = true;
+  
+  camera.add(flashlight);
+  camera.add(flashlight.target);
+  scene.add(camera);
 
   // Setup post-processing
   postProcessor = new PostProcessor(renderer, scene, camera);
@@ -99,14 +113,21 @@ function animate(time) {
     candle.update(dt);
   }
   
-  // Update post-processing
+  // Update post-processing (always render game)
   if (postProcessor) {
-    postProcessor.update(deltaTime);
+    postProcessor.update(dt);
     postProcessor.render();
-  } else {
+  } else if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }
 }
+
+// Ensure lobby.isHidden is tracked
+const originalHide = lobbyUI.hide;
+lobbyUI.hide = function() {
+  this.isHidden = true;
+  originalHide.call(this);
+};
 
 // Start the game when DOM is ready
 if (document.readyState === 'loading') {

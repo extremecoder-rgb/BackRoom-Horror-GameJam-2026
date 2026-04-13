@@ -54,7 +54,8 @@ class LobbyUI {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.95);
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
         color: #eee;
         font-family: 'Courier New', monospace;
         z-index: 100;
@@ -345,11 +346,12 @@ class LobbyUI {
     const btn = document.getElementById('btn-ready');
     if (!btn) return;
     
-    const isReady = btn.textContent === 'Ready';
+    const wantsReady = btn.textContent === 'Ready';
+    btn.textContent = wantsReady ? 'Not Ready' : 'Ready';
     
     networkClient.send({
       type: 'ready',
-      data: { ready: !isReady }
+      data: { ready: wantsReady }
     });
   }
   
@@ -358,10 +360,15 @@ class LobbyUI {
    */
   startGame() {
     console.log('startGame clicked, connected:', networkClient.isConnected());
+    console.log('Players state:', this.players);
+    console.log('Room code:', this.roomCode);
+    
     if (!networkClient.isConnected()) {
       alert('Not connected to server!');
       return;
     }
+    
+    // Force start regardless of ready state for testing
     networkClient.send({
       type: 'start',
       data: {}
@@ -400,6 +407,8 @@ class LobbyUI {
   setupNetworkListeners() {
     networkClient.on('room_created', (data) => {
       this.showLobby(data.code, data.playerId);
+      // Host is the first player — show them in the list
+      this.updatePlayerList([{ id: data.playerId, name: 'Host', ready: false, isHost: true }]);
     });
     
     networkClient.on('room_joined', (data) => {
@@ -410,31 +419,44 @@ class LobbyUI {
     });
     
     networkClient.on('player_joined', (data) => {
-      // Update player list
-      const roomState = networkClient.roomState;
-      if (roomState) {
-        this.updatePlayerList(roomState.players);
+      // Add new player to our local list
+      const existing = this.players.find(p => p.id === data.playerId);
+      if (!existing) {
+        this.players.push({ id: data.playerId, name: data.name, ready: false, isHost: false });
       }
+      this.updatePlayerList(this.players);
     });
     
     networkClient.on('player_left', (data) => {
-      // Update player list
-      const roomState = networkClient.roomState;
-      if (roomState) {
-        this.updatePlayerList(roomState.players);
-      }
+      // Remove player from local list
+      this.players = this.players.filter(p => p.id !== data.playerId);
+      this.updatePlayerList(this.players);
     });
     
     networkClient.on('player_ready', (data) => {
-      // Update player list from server
+      // Update ready status in local list
+      const player = this.players.find(p => p.id === data.playerId);
+      if (player) {
+        player.ready = data.ready;
+      }
+      this.updatePlayerList(this.players);
     });
     
     networkClient.on('all_ready', (data) => {
-      // Can start now
+      console.log('Received all_ready event', data);
+      // Enable start button
+      const startBtn = document.getElementById('btn-start');
+      if (startBtn) startBtn.disabled = false;
     });
     
     networkClient.on('game_start', (data) => {
+      console.log('Received game_start, hiding lobby');
       this.hide();
+    });
+    
+    networkClient.on('room_closed', (data) => {
+      alert(data.reason || 'Room closed');
+      this.showMenu();
     });
     
     networkClient.on('error', (data) => {
