@@ -85,7 +85,15 @@ export class PostProcessor {
    * Setup post-processing pipeline
    */
   setup() {
-    const size = this.renderer.getSize();
+    // Handle case where getSize might not be available yet
+    let size = { width: window.innerWidth, height: window.innerHeight };
+    try {
+      if (this.renderer && typeof this.renderer.getSize === 'function') {
+        size = this.renderer.getSize();
+      }
+    } catch (e) {
+      console.warn('Renderer not ready for getSize:', e);
+    }
     
     // Create composer
     this.composer = new EffectComposer(this.renderer);

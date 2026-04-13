@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { createRenderer } from './game/renderer.js';
 import { MapGenerator } from './environment/map-generator.js';
 import { setupAtmosphere, createMoonlight, createCandles } from './environment/lighting.js';
@@ -15,12 +14,16 @@ import lobbyUI from './ui/lobby.js';
 let renderer, scene, camera, postProcessor;
 let mapGenerator;
 let candles = [];
-let clock = new THREE.Clock();
+let lastTime = 0;
 
 // Initialize game
 async function init() {
   // Create renderer first
   const canvas = document.getElementById('game-canvas');
+  if (!canvas) {
+    console.error('Canvas not found!');
+    return;
+  }
   renderer = createRenderer(canvas);
 
   // Create scene
@@ -48,9 +51,6 @@ async function init() {
   // Add flickering candles
   candles = createCandles(mapData, scene, 8);
   
-  // Setup post-processing
-  postProcessor = new PostProcessor(renderer, scene, camera);
-  
   // Setup camera
   camera = new THREE.PerspectiveCamera(
     75,
@@ -59,6 +59,9 @@ async function init() {
     100
   );
   camera.position.set(5, 5.6, 5); // Start in ground floor
+
+  // Setup post-processing
+  postProcessor = new PostProcessor(renderer, scene, camera);
   
   // Handle resize
   window.addEventListener('resize', onWindowResize);
@@ -83,14 +86,16 @@ function onWindowResize() {
 }
 
 // Animation loop
-function animate() {
+function animate(time) {
   requestAnimationFrame(animate);
   
-  const deltaTime = clock.getDelta();
+  const deltaTime = (time - lastTime) / 1000;
+  lastTime = time;
+  const dt = Math.min(deltaTime, 0.1); // Cap at 100ms
   
   // Update candle flickering
   for (const candle of candles) {
-    candle.update(deltaTime);
+    candle.update(dt);
   }
   
   // Update post-processing
