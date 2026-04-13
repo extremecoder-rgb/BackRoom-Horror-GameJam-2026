@@ -357,6 +357,11 @@ class LobbyUI {
    * Start the game
    */
   startGame() {
+    console.log('startGame clicked, connected:', networkClient.isConnected());
+    if (!networkClient.isConnected()) {
+      alert('Not connected to server!');
+      return;
+    }
     networkClient.send({
       type: 'start',
       data: {}
