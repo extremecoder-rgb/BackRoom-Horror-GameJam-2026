@@ -194,6 +194,8 @@ class RoomManager {
     
     player.ready = ready;
     
+    console.log(`Player ready: ${player.name} = ${ready} for room ${code}`);
+    
     // Broadcast ready status
     this.broadcast(code, {
       type: 'player_ready',
