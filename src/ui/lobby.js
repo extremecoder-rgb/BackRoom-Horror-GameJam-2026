@@ -302,9 +302,13 @@ class LobbyUI {
     `;
     
     // Bind events
-    document.getElementById('btn-ready').addEventListener('click', () => this.toggleReady());
-    document.getElementById('btn-start').addEventListener('click', () => this.startGame());
-    document.getElementById('btn-leave').addEventListener('click', () => this.leaveRoom());
+    const btnReady = document.getElementById('btn-ready');
+    const btnStart = document.getElementById('btn-start');
+    const btnLeave = document.getElementById('btn-leave');
+    
+    if (btnReady) btnReady.addEventListener('click', () => this.toggleReady());
+    if (btnStart) btnStart.addEventListener('click', () => this.startGame());
+    if (btnLeave) btnLeave.addEventListener('click', () => this.leaveRoom());
   }
   
   /**
@@ -339,6 +343,8 @@ class LobbyUI {
     if (!this.roomCode) return;
     
     const btn = document.getElementById('btn-ready');
+    if (!btn) return;
+    
     const isReady = btn.textContent === 'Ready';
     
     networkClient.send({
