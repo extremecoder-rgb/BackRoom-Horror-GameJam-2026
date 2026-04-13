@@ -210,20 +210,20 @@ Requirements for initial release. Each maps to roadmap phases.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 - FOUND-07 | Phase 1 | Pending |
+| NET-01 - NET-12 | Phase 1 | Pending |
 | MAP-01 - MAP-14 | Phase 2 | Pending |
+| FX-01 - FX-12 | Phase 2 | Pending |
 | PLAY-01 - PLAY-15 | Phase 3 | Pending |
 | GHOST-01 - GHOST-11 | Phase 4 | Pending |
 | EVID-01 - EVID-16 | Phase 5 | Pending |
-| NET-01 - NET-12 | Phase 6 | Pending |
+| WIN-01 - WIN-12 | Phase 5 | Pending |
+| AUDIO-01 - AUDIO-13 | Phase 6 | Pending |
 | AI-01 - AI-05 | Phase 7 | Pending |
-| AUDIO-01 - AUDIO-13 | Phase 8 | Pending |
-| FX-01 - FX-12 | Phase 9 | Pending |
-| UI-01 - UI-15 | Phase 10 | Pending |
-| WIN-01 - WIN-12 | Phase 11 | Pending |
+| UI-01 - UI-15 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 107 total
-- Mapped to phases: 107
+- Mapped to phases: 107 ✓
 - Unmapped: 0 ✓
 
 ---
