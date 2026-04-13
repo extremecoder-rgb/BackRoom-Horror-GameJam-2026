@@ -30,8 +30,8 @@ A browser-based 1-4 player cooperative horror investigation game built entirely 
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Configure Vite, Three.js, ws, project structure
-- [ ] 01-02: Build WebSocket server, room system, lobby
+- [x] 01-01-PLAN.md: Configure Vite, Three.js, ws, project structure
+- [ ] 01-02-PLAN.md: Build WebSocket server, room system, lobby
 
 ### Phase 2: Environment
 **Goal**: Procedurally generated Victorian haunted house with atmospheric rendering
@@ -46,8 +46,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Procedural map generation, textures, lighting
-- [ ] 02-02: Post-processing effects, props, atmosphere
+- [x] 02-01-PLAN.md: Procedural map generation, textures, lighting
+- [x] 02-02-PLAN.md: Post-processing effects, props, atmosphere
 
 ### Phase 3: Player
 **Goal**: First-person movement with flashlight, sanity system, and interaction
