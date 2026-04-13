@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { createRenderer } from './game/renderer.js';
 import { MapGenerator } from './environment/map-generator.js';
 import { setupAtmosphere, createMoonlight, createCandles } from './environment/lighting.js';
@@ -45,7 +46,7 @@ async function init() {
   ];
   for (const wp of windowPositions) {
     const moonlight = createMoonlight(wp.pos, wp.target);
-    scene.add(moonlight);
+    if (moonlight) scene.add(moonlight);
   }
   
   // Add flickering candles
