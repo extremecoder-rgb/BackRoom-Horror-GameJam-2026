@@ -1,36 +1,19 @@
 import * as THREE from 'three';
 
 /**
- * Seeded PRNG
+ * Simple seeded PRNG (mulberry32)
  */
-function alea(...seeds) {
-  let s0 = 0, s1 = 0, s2 = 0, c = 1;
-  const mash = data => {
-    data = String(data);
-    for (let i = 0; i < data.length; i++) {
-      s0 ^= mash_128(data.charCodeAt(i));
-      s1 ^= mash_128(data.charCodeAt(i));
-      s2 ^= mash_128(data.charCodeAt(i));
-    }
-  };
-  const mash_128 = x => {
-    x = Math.imul(x, 0x5D6CE79B);
-    x ^= x >>> 16;
-    x = Math.imul(x + x, 0x5D6CE79B);
-    return x;
-  };
-  for (let i = 0; i < seeds.length; i++) {
-    s0 ^= seeds[i] >>> 0;
-    s1 ^= seeds[i] >>> 0;
-    s2 ^= seeds[i] >>> 0;
+function seededRandom(seed) {
+  let h = 0;
+  const str = String(seed);
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
   }
-  
   return function() {
-    s0 = s0 >>> 0; s1 = s1 >>> 0; s2 = s2 >>> 0;
-    const t = (s0 + s1 + s2) >>> 0;
-    s0 = s0 >>> 0; s1 = s1 >>> 0; s2 = s2 >>> 0;
-    s2 = (s2 + 1) >>> 0;
-    return ((t + c) / 4294967296) >>> 0;
+    h |= 0; h = h + 0x6D2B79F5 | 0;
+    let t = Math.imul(h ^ h >>> 15, 1 | h);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
 
@@ -38,7 +21,7 @@ function alea(...seeds) {
  * Generate aged plaster wall texture (canvas-based)
  */
 export function generateWallTexture(width = 512, height = 512, seed = 'wall') {
-  const rng = alea(seed.split('').map(c => c.charCodeAt(0)));
+  const rng = seededRandom(seed);
   
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -109,7 +92,7 @@ export function generateWallTexture(width = 512, height = 512, seed = 'wall') {
  * Generate wood floor texture (canvas-based)
  */
 export function generateFloorTexture(width = 512, height = 512, seed = 'floor') {
-  const rng = alea(seed.split('').map(c => c.charCodeAt(0)));
+  const rng = seededRandom(seed);
   
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -171,7 +154,7 @@ export function generateFloorTexture(width = 512, height = 512, seed = 'floor') 
  * Generate door texture
  */
 export function generateDoorTexture(width = 256, height = 256, seed = 'door') {
-  const rng = alea(seed.split('').map(c => c.charCodeAt(0)));
+  const rng = seededRandom(seed);
   
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -217,7 +200,7 @@ export function generateDoorTexture(width = 256, height = 256, seed = 'door') {
  * Generate ceiling texture
  */
 export function generateCeilingTexture(width = 512, height = 512, seed = 'ceiling') {
-  const rng = alea(seed.split('').map(c => c.charCodeAt(0)));
+  const rng = seededRandom(seed);
   
   const canvas = document.createElement('canvas');
   canvas.width = width;

@@ -1,20 +1,18 @@
 import * as THREE from 'three';
 
-// Post-processing imports
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 /**
- * Custom shader for vignette + film grain + chromatic aberration
+ * Subtle Backrooms post-processing: slight vignette + film grain only
+ * NO bloom (was crushing contrast), minimal effects
  */
-const HorrorEffectShader = {
+const BackroomsShader = {
   uniforms: {
     tDiffuse: { value: null },
     time: { value: 0 },
-    intensity: { value: 1.0 },
     flicker: { value: 0 }
   },
   vertexShader: `
@@ -27,11 +25,9 @@ const HorrorEffectShader = {
   fragmentShader: `
     uniform sampler2D tDiffuse;
     uniform float time;
-    uniform float intensity;
     uniform float flicker;
     varying vec2 vUv;
     
-    // Random noise
     float random(vec2 co) {
       return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
     }
@@ -39,105 +35,67 @@ const HorrorEffectShader = {
     void main() {
       vec2 uv = vUv;
       
-      // Chromatic aberration (subtle, increases with flicker)
-      float aberration = 0.002 * intensity + flicker * 0.01;
+      // Very subtle chromatic aberration only during flicker
+      float aberration = flicker * 0.003;
       vec4 color;
       color.r = texture2D(tDiffuse, uv + vec2(aberration, 0.0)).r;
       color.g = texture2D(tDiffuse, uv).g;
       color.b = texture2D(tDiffuse, uv - vec2(aberration, 0.0)).b;
       color.a = 1.0;
       
-      // Vignette (darker edges)
+      // Gentle vignette - only darken the very edges
       vec2 center = uv - 0.5;
       float dist = length(center);
-      float vignette = 1.0 - smoothstep(0.3, 0.9, dist);
-      vignette = mix(0.3, 1.0, vignette);
+      float vignette = 1.0 - smoothstep(0.5, 1.0, dist);
+      vignette = mix(0.7, 1.0, vignette);
       color.rgb *= vignette;
       
-      // Film grain
-      float grain = random(uv + time) * 0.1 * intensity;
-      color.rgb += grain - 0.05;
+      // Tiny film grain
+      float grain = random(uv + time) * 0.015;
+      color.rgb += grain - 0.0075;
       
-      // Screen flicker (during ghost events)
-      color.rgb *= 1.0 + flicker * (random(vec2(time, 0.0)) - 0.5) * 0.3;
+      // Flicker effect (only during ghost events)
+      color.rgb *= 1.0 + flicker * (random(vec2(time, 0.0)) - 0.5) * 0.15;
       
       gl_FragColor = color;
     }
   `
 };
 
-/**
- * Post-processing setup for horror atmosphere
- */
 export class PostProcessor {
   constructor(renderer, scene, camera) {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
-    this.composer = null;
-    this.horrorPass = null;
-    this.bloomPass = null;
     this.flickerIntensity = 0;
     this.time = 0;
+    this.failed = false;
     
-    this.setup();
-  }
-  
-  /**
-   * Setup post-processing pipeline
-   */
-  setup() {
-    // Handle case where renderer might not be ready
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    
-    if (this.renderer && this.renderer.domElement && this.renderer.domElement.width) {
-      try {
-        width = this.renderer.domElement.width || width;
-        height = this.renderer.domElement.height || height;
-      } catch (e) {
-        // Use window size fallback
-      }
+    try {
+      this.composer = new EffectComposer(this.renderer);
+      
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
+      
+      // NO bloom pass - it was darkening everything
+      
+      this.horrorPass = new ShaderPass(BackroomsShader);
+      this.composer.addPass(this.horrorPass);
+      
+      const outputPass = new OutputPass();
+      this.composer.addPass(outputPass);
+    } catch (e) {
+      console.warn('Post-processing setup failed:', e);
+      this.failed = true;
     }
-    
-    const size = { width, height };
-    
-    // Create composer
-    this.composer = new EffectComposer(this.renderer);
-    
-    // Render pass
-    const renderPass = new RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
-    
-    // Bloom pass (subtle)
-    this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(size.width, size.height),
-      0.6,  // strength
-      0.3,  // radius
-      0.85   // threshold
-    );
-    this.composer.addPass(this.bloomPass);
-    
-    // Custom horror effect pass
-    this.horrorPass = new ShaderPass(HorrorEffectShader);
-    this.composer.addPass(this.horrorPass);
-    
-    // Output pass
-    const outputPass = new OutputPass();
-    this.composer.addPass(outputPass);
   }
   
-  /**
-   * Update effects each frame
-   */
   update(deltaTime) {
     this.time += deltaTime;
     
     if (this.horrorPass) {
       this.horrorPass.uniforms.time.value = this.time;
-      this.horrorPass.uniforms.intensity.value = 1.0;
       
-      // Decay flicker
       if (this.flickerIntensity > 0) {
         this.flickerIntensity -= deltaTime * 2;
         if (this.flickerIntensity < 0) this.flickerIntensity = 0;
@@ -146,84 +104,39 @@ export class PostProcessor {
     }
   }
   
-  /**
-   * Trigger screen flicker effect
-   */
   triggerFlicker(intensity = 1.0) {
     this.flickerIntensity = intensity;
   }
   
-  /**
-   * Render with post-processing
-   */
   render() {
-    this.composer.render();
+    if (this.failed) {
+      this.renderer.render(this.scene, this.camera);
+    } else {
+      try {
+        this.composer.render();
+      } catch (e) {
+        console.warn('Post-processing render failed, using fallback:', e);
+        this.failed = true;
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
   }
   
-  /**
-   * Resize handler
-   */
   resize(width, height) {
     this.composer.setSize(width, height);
-    this.bloomPass.resolution.set(width, height);
   }
 }
 
-/**
- * Screen effects manager (for game events)
- */
+// Keep ScreenEffects export for compatibility
 export class ScreenEffects {
   constructor(postProcessor) {
     this.postProcessor = postProcessor;
-    this.vignetteIntensity = 1.0;
-    this.staticIntensity = 0;
-    this.bloodDrip = 0;
   }
-  
-  /**
-   * Trigger ghost event effect
-   */
   triggerGhostEvent() {
-    if (this.postProcessor) {
-      this.postProcessor.triggerFlicker(1.0);
-    }
+    if (this.postProcessor) this.postProcessor.triggerFlicker(1.0);
   }
-  
-  /**
-   * Increase vignette (low sanity)
-   */
-  setSanityLevel(sanity) {
-    // Higher vignette at lower sanity
-    this.vignetteIntensity = 0.5 + (sanity / 100) * 0.5;
-  }
-  
-  /**
-   * Trigger static disruption
-   */
-  triggerStatic() {
-    this.staticIntensity = 1.0;
-  }
-  
-  /**
-   * Trigger blood drip effect
-   */
-  triggerBloodDrip() {
-    this.bloodDrip = 1.0;
-  }
-  
-  /**
-   * Update each frame
-   */
-  update(deltaTime) {
-    // Decay effects
-    if (this.staticIntensity > 0) {
-      this.staticIntensity -= deltaTime;
-      if (this.staticIntensity < 0) this.staticIntensity = 0;
-    }
-    
-    if (this.bloodDrip > 0) {
-      this.bloodDrip -= deltaTime * 0.5;
-      if (this.bloodDrip < 0) this.bloodDrip = 0;
-    }
-  }
+  setSanityLevel() {}
+  triggerStatic() {}
+  triggerBloodDrip() {}
+  update() {}
 }

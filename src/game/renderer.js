@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Create the WebGL renderer with optimized settings for horror atmosphere
+ * Create the WebGL renderer
  */
 export function createRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ 
@@ -11,22 +11,26 @@ export function createRenderer(canvas) {
     powerPreference: 'high-performance'
   });
   
-  // Enable shadows for flashlight
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Shadows OFF for performance (hundreds of lights)
+  renderer.shadowMap.enabled = false;
   
-  // Tone mapping for cinematic look
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  // Use LinearToneMapping with high exposure for bright fluorescent look
+  renderer.toneMapping = THREE.LinearToneMapping;
+  renderer.toneMappingExposure = 1.5;
   
-  // Set output encoding
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  
-  // Set pixel ratio for sharp rendering
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  
-  // Set default size
   renderer.setSize(window.innerWidth, window.innerHeight);
+  
+  // Handle WebGL context loss to prevent black screen
+  renderer.domElement.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    console.warn('WebGL context lost - attempting recovery...');
+  });
+  
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    console.log('WebGL context restored');
+  });
   
   return renderer;
 }

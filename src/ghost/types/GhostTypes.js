@@ -97,6 +97,7 @@ export function checkEvidence(ghostType, foundEvidence) {
 export function getPossibleGhostTypes(foundEvidence) {
   return Object.entries(GhostEvidence)
     .filter(([_, required]) => 
-      required.every(e => foundEvidence.includes(e))
+      foundEvidence.every(e => required.includes(e))
+    )
     .map(([type, _]) => type);
 }

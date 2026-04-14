@@ -193,7 +193,6 @@ export class AudioEngine {
   playAmbientDrone() {
     if (!this.initialized) return;
     
-    // Low frequency drone
     const osc1 = this.createOscillator('sine', 30);
     const osc2 = this.createOscillator('sine', 32);
     const gain = this.createEnvelope();
@@ -206,6 +205,45 @@ export class AudioEngine {
     
     osc1.start();
     osc2.start();
+  }
+
+  /**
+   * Play fluorescent hum (Backrooms Level 0)
+   */
+  playFluorescentHum() {
+    if (!this.initialized) return;
+
+    // 60Hz main hum
+    const hum = this.createOscillator('square', 60);
+    const humFilter = this.context.createBiquadFilter();
+    humFilter.type = 'lowpass';
+    humFilter.frequency.value = 120;
+    
+    // High frequency buzz
+    const buzz = this.createOscillator('sawtooth', 120);
+    const buzzFilter = this.context.createBiquadFilter();
+    buzzFilter.type = 'highpass';
+    buzzFilter.frequency.value = 1000;
+    
+    const gain = this.context.createGain();
+    gain.gain.value = 0.05;
+
+    hum.connect(humFilter);
+    humFilter.connect(gain);
+    buzz.connect(buzzFilter);
+    buzzFilter.connect(gain);
+    gain.connect(this.masterGain);
+
+    hum.start();
+    buzz.start();
+    
+    // Random crackle
+    setInterval(() => {
+        if (Math.random() > 0.95) {
+            gain.gain.setValueAtTime(0.08, this.context.currentTime);
+            gain.gain.linearRampToValueAtTime(0.05, this.context.currentTime + 0.1);
+        }
+    }, 500);
   }
   
   /**

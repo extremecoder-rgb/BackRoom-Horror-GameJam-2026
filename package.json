@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "server": "node server/index.js",
-    "start": "npm run server & npm run dev"
+    "start": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
     "dotenv": "^16.4.0",
@@ -16,6 +16,7 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "vite": "^5.4.0"
   }
 }

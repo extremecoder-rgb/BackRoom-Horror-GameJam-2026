@@ -83,7 +83,7 @@ class RoomManager {
     
     console.log(`Player ${playerName} joined room ${code}`);
     
-    return { success: true, playerId: player.id, room };
+    return { success: true, code, playerId: player.id, room };
   }
   
   /**

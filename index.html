@@ -7,9 +7,18 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <canvas id="game-canvas"></canvas>
-  </div>
-  <script type="module" src="/src/main.js"></script>
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+      <div id="error-log" style="position: absolute; top: 0; left: 0; z-index: 9999; color: red; background: black; font-family: monospace; padding: 10px; white-space: pre-wrap; font-size: 14px;"></div>
+    </div>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        document.getElementById('error-log').innerHTML += 'ERROR: ' + msg + '<br>' + (error ? error.stack : '') + '<br><br>';
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        document.getElementById('error-log').innerHTML += 'PROMISE ERROR: ' + event.reason + '<br><br>';
+      });
+    </script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
