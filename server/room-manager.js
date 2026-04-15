@@ -20,7 +20,7 @@ class RoomManager {
   }
   
   /**
-   * Create a new room
+   * Create a new room (2-player PvP Ghost mode)
    */
   createRoom(hostWs, hostName = 'Host') {
     const code = this.generateCode();
@@ -33,21 +33,23 @@ class RoomManager {
       createdAt: Date.now()
     };
     
-    // Create host player
+    // Create host player as potential ghost or survivor
     const hostPlayer = {
       id: uuidv4(),
       name: hostName,
       ws: hostWs,
       ready: false,
-      position: { x: 0, y: 1.6, z: 0 },
-      rotation: 0
+      position: { x: -5, y: 1.6, z: -5 },
+      rotation: 0,
+      role: 'unknown',
+      isGhost: false
     };
     
     room.host = hostPlayer;
     room.players.set(hostPlayer.id, hostPlayer);
     this.rooms.set(code, room);
     
-    console.log(`Room created: ${code} by ${hostName}`);
+    console.log(`Room created: ${code} by ${hostName} (2-player PvP Ghost mode)`);
     
     return { code, playerId: hostPlayer.id, room };
   }
@@ -62,7 +64,7 @@ class RoomManager {
       return { success: false, error: 'Room not found' };
     }
     
-    if (room.players.size >= 4) {
+    if (room.players.size >= 2) {
       return { success: false, error: 'Room is full' };
     }
     
@@ -76,12 +78,34 @@ class RoomManager {
       ws: ws,
       ready: false,
       position: { x: 0, y: 1.6, z: 0 },
-      rotation: 0
+      rotation: 0,
+      role: 'unknown',
+      isGhost: false
     };
     
     room.players.set(player.id, player);
     
+    // Assign roles randomly between host and joiner
+    const hostPlayer = room.host;
+    if (Math.random() > 0.5) {
+      hostPlayer.role = 'ghost';
+      hostPlayer.isGhost = true;
+      player.role = 'survivor';
+      player.isGhost = false;
+    } else {
+      hostPlayer.role = 'survivor';
+      hostPlayer.isGhost = false;
+      player.role = 'ghost';
+      player.isGhost = true;
+    }
+    
     console.log(`Player ${playerName} joined room ${code}`);
+    
+    // Update the room state for everybody now that roles are assigned
+    this.broadcast(code, {
+      type: 'room_state_update',
+      data: this.getRoomState(code)
+    });
     
     return { success: true, code, playerId: player.id, room };
   }
@@ -175,7 +199,9 @@ class RoomManager {
         id: p.id,
         name: p.name,
         ready: p.ready,
-        isHost: room.host && p.id === room.host.id
+        isHost: room.host && p.id === room.host.id,
+        role: p.role,
+        isGhost: p.isGhost
       })),
       started: room.started,
       playerCount: room.players.size
@@ -206,13 +232,14 @@ class RoomManager {
   }
   
   /**
-   * Check if all players are ready
+   * Check if all players are ready (2 players required for PvP Ghost mode)
    */
   allReady(code) {
     const room = this.rooms.get(code);
     if (!room) return false;
     
-    if (room.players.size < 1) return false;
+    // Require exactly 2 players for PvP Ghost mode
+    if (room.players.size !== 2) return false;
     
     for (const player of room.players.values()) {
       if (!player.ready) return false;
@@ -234,21 +261,7 @@ class RoomManager {
     
     room.started = true;
     
-    // Broadcast game start
-    this.broadcast(code, {
-      type: 'game_start',
-      data: {
-        roomCode: code,
-        players: Array.from(room.players.values()).map(p => ({
-          id: p.id,
-          name: p.name,
-          position: p.position,
-          rotation: p.rotation
-        }))
-      }
-    });
-    
-    console.log(`Game started in room ${code}`);
+    console.log(`Game started in room ${code} (Game state will broadcast)`);
     
     return { success: true, room };
   }

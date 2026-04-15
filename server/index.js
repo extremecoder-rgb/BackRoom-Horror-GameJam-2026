@@ -97,6 +97,14 @@ function handleMessage(ws, message) {
       handleChat(ws, data);
       break;
       
+    case 'start_hunt':
+      handleStartHunt(ws);
+      break;
+      
+    case 'end_hunt':
+      handleEndHunt(ws);
+      break;
+      
     default:
       console.log(`Unknown message type: ${type}`);
   }
@@ -250,7 +258,9 @@ function handleStart(ws) {
       id: p.id,
       name: p.name,
       position: p.position,
-      rotation: p.rotation
+      rotation: p.rotation,
+      isGhost: p.isGhost,
+      role: p.role
     }));
     
     const gameState = new GameState();
@@ -323,6 +333,64 @@ function handleChat(ws, data) {
   }, ws);
 }
 
+// Ghost player starts hunt (speed boost)
+function handleStartHunt(ws) {
+  const code = clientRooms.get(ws);
+  if (!code) return;
+  
+  const gameState = gameStates.get(code);
+  if (!gameState) return;
+  
+  // Verify player is the ghost
+  const room = roomManager.rooms.get(code);
+  let playerId = null;
+  if (room) {
+    for (const [id, player] of room.players) {
+      if (player.ws === ws) {
+        playerId = id;
+        break;
+      }
+    }
+  }
+  
+  if (playerId && playerId === gameState.ghostPlayerId) {
+    gameState.startHunt();
+    roomManager.broadcast(code, {
+      type: 'hunt_started',
+      data: { timer: gameState.huntTimer }
+    });
+  }
+}
+
+// Ghost player ends hunt early
+function handleEndHunt(ws) {
+  const code = clientRooms.get(ws);
+  if (!code) return;
+  
+  const gameState = gameStates.get(code);
+  if (!gameState) return;
+  
+  // Verify player is the ghost
+  const room = roomManager.rooms.get(code);
+  let playerId = null;
+  if (room) {
+    for (const [id, player] of room.players) {
+      if (player.ws === ws) {
+        playerId = id;
+        break;
+      }
+    }
+  }
+  
+  if (playerId && playerId === gameState.ghostPlayerId) {
+    gameState.endHunt();
+    roomManager.broadcast(code, {
+      type: 'hunt_ended',
+      data: { cooldown: gameState.huntCooldown }
+    });
+  }
+}
+
 // Game loop
 function startGameLoop() {
   if (gameInterval) return;
@@ -333,14 +401,27 @@ function startGameLoop() {
     for (const [code, gameState] of gameStates) {
       if (!gameState.started) continue;
       
-      // Update ghost
-      gameState.updateGhost();
+      // Update tick (handles hunt collision, timers, etc.)
+      gameState.updateTick();
       
-      // Broadcast game state
-      roomManager.broadcast(code, {
-        type: 'game_state',
-        data: gameState.serialize()
-      });
+      // Broadcast game state to appropriate players
+      const room = roomManager.rooms.get(code);
+      if (!room) continue;
+      
+      for (const player of room.players.values()) {
+        const state = player.id === gameState.ghostPlayerId 
+          ? gameState.serializeForGhost(player.id)
+          : gameState.serializeForSurvivor(player.id);
+        
+        try {
+          player.ws.send(JSON.stringify({
+            type: 'game_state',
+            data: state
+          }));
+        } catch (e) {
+          // Ignore send errors
+        }
+      }
     }
   }, TICK_RATE);
 }

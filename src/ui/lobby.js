@@ -179,11 +179,12 @@ class LobbyUI {
     this.state = 'menu';
     this.container.innerHTML = `
       <h1>SPECTRA</h1>
+      <p class="status">2-Player PvP Ghost Mode</p>
       <div class="menu-buttons">
         <button id="btn-create">Create Room</button>
         <button id="btn-join">Join Room</button>
       </div>
-      <p class="status">The dead don't rest here. Neither will you.</p>
+      <p class="status">One is the ghost. One is the survivor. Who will survive?</p>
     `;
     
     // Ensure container is in DOM
@@ -321,19 +322,22 @@ class LobbyUI {
     const list = document.getElementById('player-list');
     if (!list) return;
     
-    list.innerHTML = players.map(p => `
-      <li class="${p.ready ? 'ready' : 'not-ready'}">
-        <span>${p.name}${p.isHost ? ' (Host)' : ''}</span>
-        <span>${p.ready ? '✓' : '✗'}</span>
-      </li>
-    `).join('');
+    list.innerHTML = players.map(p => {
+      const roleStr = p.role && p.role !== 'unknown' ? ` [${p.role.toUpperCase()}]` : '';
+      const readyStr = p.ready ? '✓' : '✗';
+      const hostStr = p.isHost ? ' (Host)' : '';
+      return `<li class="${p.ready ? 'ready' : 'not-ready'}">
+        <span>${p.name}${hostStr}${roleStr}</span>
+        <span>${readyStr}</span>
+      </li>`;
+    }).join('');
     
-    // Enable start button if all ready
+    // Enable start button if all ready and at least 2 players (for PvP Ghost mode)
     const startBtn = document.getElementById('btn-start');
     if (startBtn) {
       const allReady = players.every(p => p.ready);
-      const hasMultiple = players.length >= 1;
-      startBtn.disabled = !allReady || !hasMultiple;
+      const hasTwoPlayers = players.length >= 2;
+      startBtn.disabled = !allReady || !hasTwoPlayers;
     }
   }
   
@@ -407,12 +411,18 @@ class LobbyUI {
   setupNetworkListeners() {
     networkClient.on('room_created', (data) => {
       this.showLobby(data.code, data.playerId);
+      this.playerId = data.playerId;
+      window.myPlayerId = data.playerId;
+      console.log('[Lobby] Created room, my playerId:', data.playerId);
       // Host is the first player — show them in the list
       this.updatePlayerList([{ id: data.playerId, name: 'Host', ready: false, isHost: true }]);
     });
     
     networkClient.on('room_joined', (data) => {
       this.showLobby(data.code, data.playerId);
+      this.playerId = data.playerId;
+      window.myPlayerId = data.playerId;
+      console.log('[Lobby] Joined room, my playerId:', data.playerId);
       if (data.roomState) {
         this.updatePlayerList(data.roomState.players);
       }
@@ -422,9 +432,15 @@ class LobbyUI {
       // Add new player to our local list
       const existing = this.players.find(p => p.id === data.playerId);
       if (!existing) {
-        this.players.push({ id: data.playerId, name: data.name, ready: false, isHost: false });
+        this.players.push({ id: data.playerId, name: data.name, ready: false, isHost: false, role: 'unknown' });
       }
       this.updatePlayerList(this.players);
+    });
+
+    networkClient.on('room_state_update', (data) => {
+      if (data && data.players) {
+        this.updatePlayerList(data.players);
+      }
     });
     
     networkClient.on('player_left', (data) => {
@@ -450,7 +466,14 @@ class LobbyUI {
     });
     
     networkClient.on('game_start', (data) => {
-      console.log('Received game_start, hiding lobby');
+      console.log('Received game_start, data:', data);
+      // Save role info for PvP Ghost mode
+      const myPlayer = data.players?.find(p => p.id === this.playerId);
+      if (myPlayer) {
+        window.myRole = myPlayer.role;
+        window.isGhost = myPlayer.isGhost;
+        console.log(`My role: ${myPlayer.role} (isGhost: ${myPlayer.isGhost})`);
+      }
       this.hide();
     });
     

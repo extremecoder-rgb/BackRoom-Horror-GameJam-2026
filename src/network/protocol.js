@@ -108,6 +108,11 @@ export const GameEventType = {
   CHAT: 'chat',
   POSITION: 'position',
   ERROR: 'error',
+  // PvP Ghost mode
+  START_HUNT: 'start_hunt',
+  END_HUNT: 'end_hunt',
+  HUNT_STARTED: 'hunt_started',
+  HUNT_ENDED: 'hunt_ended',
   // Server -> Client
   WELCOME: 'welcome',
   ROOM_CREATED: 'room_created',
